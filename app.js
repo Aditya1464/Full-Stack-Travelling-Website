@@ -6,11 +6,15 @@ const mongoose = require("mongoose");
 const methodOverride = require("method-override");
 const ejsMate = require("ejs-mate");
 const ExpressError = require("./utils/ExpressError.js");
+const passport = require("passport");
+const LocalStrategy = require("passport-local");
+const User = require("./models/user.js")
 
 
 //router
 const listings = require("./routes/listing.js");
 const reviews = require("./routes/reviews.js");
+const user = require("./routes/user.js")
 
 app.set("view engine", "ejs"); //set ejs as a view engine
 app.set("views", path.join(__dirname, "views")); 
@@ -50,14 +54,22 @@ app.use(session(sessionoptions));
 const flash = require("connect-flash");
 app.use(flash());
 
+app.use(passport.initialize());
+app.use(passport.session());
+passport.use(new LocalStrategy(User.authenticate()))
+passport.serializeUser(User.serializeUser());
+passport.deserializeUser(User.deserializeUser());
+
 app.use((req, res, next) => {
   res.locals.success = req.flash("success");
   res.locals.error = req.flash("error");
+  res.locals.currentUser = req.user;
   next();
 });
 
 app.use("/listings", listings);
 app.use("/listings/:id/reviews", reviews);
+app.use("/", user);
 
 
 app.all("*", (req, res, next) => {
